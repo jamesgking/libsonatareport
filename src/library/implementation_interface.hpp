@@ -170,6 +170,7 @@ struct ParallelImplementation {
         // Disable MPI-IO optimizations for better IME support
         if (path_info.first & FSTYPE_IME) {
             IMEUtil::setMPIHints(info);
+            printf("Setting MPI hints!! (%s)\n", IMEUtil::getFSTypeString(path_info.first).c_str());
         }
 
         // Set the MPI Info object with the hints

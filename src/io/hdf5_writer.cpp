@@ -29,7 +29,8 @@ HDF5Writer::HDF5Writer(const std::string& report_name)
     // Ensure MPI utilizes the proper IME driver with the correct path
     const auto& path_info = IMEUtil::getPathInfo(file_name);
     if (path_info.first & FSTYPE_IME) {
-        file_name = path_info.second;
+        printf("Setting new path!! (%s -> %s)\n", file_name.c_str(), path_info.second.c_str());
+            file_name = path_info.second;
     }
 #endif
 
