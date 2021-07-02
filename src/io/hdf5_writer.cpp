@@ -30,6 +30,10 @@ HDF5Writer::HDF5Writer(const std::string& report_name)
 
     file_ = H5Fcreate(file_name.data(), H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
 
+    if (SonataReport::rank_ == 0) {
+        logger->debug("File '{}' created! hid_t={}", file_name, file_);
+    }
+
     // Create enum type for the ordering of the spikes
     spikes_attr_type_ = H5Tenum_create(H5T_STD_U8LE);
     uint8_t val;
@@ -38,6 +42,10 @@ HDF5Writer::HDF5Writer(const std::string& report_name)
     H5Tenum_insert(spikes_attr_type_, "by_time", (val = 2, &val));
 
     H5Pclose(plist_id);
+
+    if (SonataReport::rank_ == 0) {
+        logger->debug("Finished initializing HDF5! hid_t={}", file_);
+    }
 }
 
 void HDF5Writer::configure_group(const std::string& group_name) {
@@ -109,6 +117,10 @@ void HDF5Writer::write_2D(const std::vector<float>& buffer,
                           uint32_t total_elements) {
     std::array<hsize_t, 2> count = {steps_to_write, total_elements};
 
+
+    if (SonataReport::rank_ == 0) {
+        logger->debug("Writing {} of {}...", steps_to_write, total_elements);
+    }
     hid_t memspace = H5Screate_simple(2, count.data(), nullptr);
     hid_t filespace = H5Dget_space(dataset_);
 
@@ -121,6 +133,9 @@ void HDF5Writer::write_2D(const std::vector<float>& buffer,
 
     H5Dwrite(dataset_, H5T_NATIVE_FLOAT, memspace, filespace, collective_list_, buffer.data());
     offset_[0] += steps_to_write;
+    if (SonataReport::rank_ == 0) {
+        logger->debug("Data has been written!");
+    }
 
     H5Sclose(filespace);
     H5Sclose(memspace);
@@ -128,6 +143,9 @@ void HDF5Writer::write_2D(const std::vector<float>& buffer,
 
 template <typename T>
 void HDF5Writer::write(const std::string& dataset_name, const std::vector<T>& buffer) {
+    if (SonataReport::rank_ == 0) {
+        logger->debug("Alternative write '{}' (size={})", dataset_name, buffer.size());
+    }
     hsize_t dims = buffer.size();
     hid_t type = h5typemap::get_h5_type(T(0));
 
@@ -142,14 +160,22 @@ void HDF5Writer::write(const std::string& dataset_name, const std::vector<T>& bu
     hid_t memspace = H5Screate_simple(1, &dims, nullptr);
     H5Sselect_hyperslab(filespace, H5S_SELECT_SET, &offset, nullptr, &dims, nullptr);
 
+    if (SonataReport::rank_ == 0) {
+        logger->debug("Alternative write '{}' / global_dims={}", dataset_name, global_dims);
+    }
     if (global_dims > 0) {
         H5Dwrite(data_set, type, memspace, filespace, collective_list_, buffer.data());
     }
-
+    if (SonataReport::rank_ == 0) {
+        logger->debug("Alternative write finished writting...");
+    }
     H5Sclose(memspace);
     H5Sclose(filespace);
     H5Dclose(data_set);
     H5Sclose(data_space);
+    if (SonataReport::rank_ == 0) {
+        logger->debug("Alternative write finished!");
+    }
 }
 
 void HDF5Writer::write_time(const std::string& dataset_name, const std::array<double, 3>& buffer) {
@@ -169,6 +195,9 @@ void HDF5Writer::write_time(const std::string& dataset_name, const std::array<do
 }
 
 void HDF5Writer::close() {
+    if (SonataReport::rank_ == 0) {
+        logger->debug("Closing the datasets and so on...");
+    }
     // We close the dataset "/data", the spike enum type and the hdf5 file
     if (dataset_) {
         H5Dclose(dataset_);
@@ -178,9 +207,15 @@ void HDF5Writer::close() {
         H5Tclose(spikes_attr_type_);
         spikes_attr_type_ = 0;
     }
+    if (SonataReport::rank_ == 0) {
+        logger->debug("Closing the file...");
+    }
     if (file_) {
         H5Fclose(file_);
         file_ = 0;
+    }
+    if (SonataReport::rank_ == 0) {
+        logger->debug("Done closing!");
     }
 }
 

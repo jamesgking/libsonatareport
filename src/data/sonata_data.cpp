@@ -99,10 +99,10 @@ bool SonataData::is_due_to_report(double step) const noexcept {
     // Dont record data if current step < tstart
     if (step < last_step_recorded_) {
         return false;
-        // Dont record data if current step > tend
+    // Dont record data if current step > tend
     } else if (step > last_step_) {
         return false;
-        // Dont record data if is not a reporting step (step%period)
+    // Dont record data if is not a reporting step (step%period)
     } else if (static_cast<int>(step - last_step_recorded_) % reporting_period_ != 0) {
         return false;
     }
